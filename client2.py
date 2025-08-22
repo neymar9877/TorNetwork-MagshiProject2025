@@ -1,8 +1,12 @@
 #print("Im the second client")
-
+from cryptography.hazmat.primitives.asymmetric import dh
 import socket
 PORT = 1535
 IP = '127.0.0.1'
+
+def diffie_hellman(client_soc):
+    param_numbers = client_soc.recv(1024).decode()
+    print("client 2 finished diffie")
 
 def main():
     # Create a TCP/IP socket
@@ -27,6 +31,7 @@ def main():
     #SEND MESSAGE TO CLIENT1
     msg = "second client says hello!!!"
     client_soc.sendall(msg.encode())
+    diffie_hellman(client_soc)
 
 
     sock.close()
