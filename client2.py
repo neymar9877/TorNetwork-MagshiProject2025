@@ -1,12 +1,22 @@
 #print("Im the second client")
 from cryptography.hazmat.primitives.asymmetric import dh
+import random
 import socket
 PORT = 1535
 IP = '127.0.0.1'
 
 def diffie_hellman(client_soc):
-    param_numbers = client_soc.recv(1024).decode()
-    print("client 2 finished diffie")
+    prime_str, generator_str  = client_soc.recv(1024).decode().split(",")
+    prime = int(prime_str)
+    generator = int(generator_str)
+    
+    private_num = random.randint(2, prime - 1)
+    temp_key = pow(generator, private_num, prime)
+    other_key = client_soc.recv(1024).decode()
+    other_key = int(other_key)
+
+    client_soc.sendall(str(temp_key).encode())
+    shared_key = pow(other_key, private_num, prime)
 
 def main():
     # Create a TCP/IP socket
