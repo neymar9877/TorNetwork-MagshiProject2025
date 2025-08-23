@@ -11,20 +11,24 @@ PORT = 1535
 IP = '127.0.0.1'
 SPLITTER = "#"
 LAST_VALUE = -1
+NUMBER_NODES = 3
+MILISECOND = 0.1
+MIN_PRIME = 2
+BUFFER_SIZE = 1024
 
 index = 2
 
 def diffie_hellman(client_soc):
-    prime_str, generator_str  = client_soc.recv(1024).decode().split(",")
+    prime_str, generator_str  = client_soc.recv(BUFFER_SIZE).decode().split(",")
     prime = int(prime_str)
     generator = int(generator_str)
     
-    private_num = random.randint(2, prime - 1)
+    private_num = random.randint(MIN_PRIME - 1, prime - 1)
     temp_key = pow(generator, private_num, prime)
 
-    other_key = client_soc.recv(1024).decode()
+    other_key = client_soc.recv(BUFFER_SIZE).decode()
     other_key = int(other_key)
-    time.sleep(0.1)
+    time.sleep(MILISECOND)
     client_soc.sendall(str(temp_key).encode())
     shared_key = pow(other_key, private_num, prime)
     return shared_key
@@ -71,44 +75,27 @@ def main():
     msg = "first client says hello!!!"
     sock.sendall(msg.encode())
     #GET MESSAGE  FROM CLIENT2 
-    client2_msg = sock.recv(1024)
+    client2_msg = sock.recv(BUFFER_SIZE)
     client2_msg = client2_msg.decode()
     print(client2_msg)
 
-    aes_key = diffie_hellman(sock)
-    aes_key = hashlib.sha256(str(aes_key).encode()).digest() # convert int -> bytes
-
-    client2_msg = sock.recv(1024)
-    client2_msg = client2_msg.decode()
-    iv_str, ct_str = client2_msg.split(',')
-    iv = bytes.fromhex(iv_str)
-    ct = bytes.fromhex(ct_str)
-
-
-    plain_text = aes_decrypt(aes_key, iv, ct)
-    print("encrypted msg after recive: ", ct_str)
-    print("decrypted msg after recive: ", plain_text)
-
-    key_list = [diffie_hellman(sock) for _ in range(3)]
+    key_list = [diffie_hellman(sock) for _ in range(NUMBER_NODES)]
     aes_key_list = []
 
     for dh_key in key_list:
         # Convert int -> bytes 
         key_bytes = str(dh_key).encode()
-        aes_key = hashlib.sha256(key_bytes).digest()  # AES-256 key
+        aes_key = hashlib.sha256(key_bytes).digest()
         aes_key_list.append(aes_key)
 
-    client2_msg = sock.recv(1024).decode()
+    client2_msg = sock.recv(BUFFER_SIZE).decode()
     parts = client2_msg.split(SPLITTER)
 
     iv_list = [bytes.fromhex(iv_hex) for iv_hex in parts[:LAST_VALUE]]
     ct_str = parts[LAST_VALUE]
-
-    print(index)
-    cipher = node1(aes_key_list[index], iv_list[index], bytes.fromhex(ct_str))
-    print(index)
-    cipher = node2(aes_key_list[index], iv_list[index], cipher)
-    print(index)
+    
+    cipher = node1(aes_key_list[index], iv_list[index], bytes.fromhex(ct_str))    
+    cipher = node2(aes_key_list[index], iv_list[index], cipher)    
     cipher = node3(aes_key_list[index], iv_list[index], cipher)
 
     print ("message is: ", cipher.decode())
