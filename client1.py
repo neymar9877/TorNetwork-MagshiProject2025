@@ -6,6 +6,7 @@ from sympy import randprime
 import random
 import socket 
 import hashlib
+import time
 PORT = 1535
 IP = '127.0.0.1'
 
@@ -19,7 +20,7 @@ def diffie_hellman(client_soc):
 
     other_key = client_soc.recv(1024).decode()
     other_key = int(other_key)
-
+    time.sleep(0.1)
     client_soc.sendall(str(temp_key).encode())
     shared_key = pow(other_key, private_num, prime)
     return shared_key

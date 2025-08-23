@@ -6,6 +6,7 @@ import hashlib
 import random
 from sympy import randprime
 import socket
+import time
 PORT = 1535
 IP = '127.0.0.1'
 
@@ -13,10 +14,11 @@ def diffie_hellman(sock):
     prime = randprime(0, 10000)
     generator = 2
     param_str = f"{prime},{generator}".encode()
+    time.sleep(0.1)
     sock.sendall(param_str)
-
     private_num = random.randint(2, prime - 1)
     temp_key = pow(generator, private_num, prime)
+    time.sleep(0.1)
     sock.sendall(str(temp_key).encode())
     
     other_key = sock.recv(1024).decode()
