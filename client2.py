@@ -9,6 +9,7 @@ import socket
 import time
 PORT = 1535
 IP = '127.0.0.1'
+SPLITTER = "#"
 
 def diffie_hellman(sock):
     prime = randprime(0, 10000)
@@ -41,16 +42,15 @@ def aes_encrypt(key: bytes, plaintext: bytes):
 def create_cipher(sock: socket, message: str):
     iv_list = [None] * 3 # default values
     ct = message.encode()
-    for i in range (3):
-        print("!")
-        aes_key = diffie_hellman(sock)
-        print("!!")
+    for i in range (3):        
+        aes_key = diffie_hellman(sock)        
         aes_key = hashlib.sha256(str(aes_key).encode()).digest() # convert int -> bytes
         iv_list[i], ct = aes_encrypt(aes_key, ct)
         ct_str = ct.hex()
-    cipherText = "555".join([iv.hex() for iv in iv_list]) + "555" + ct_str
+    cipherText = SPLITTER.join([iv.hex() for iv in iv_list]) + SPLITTER + ct_str
     print("cipherText after 3 layers: ", ct_str)
     print("cipherText after 3 layers with the iv: ", cipherText)
+    return cipherText
 
 
 def main():
@@ -84,12 +84,14 @@ def main():
 
     msg = iv_str + "," + ct_str
     print("encrypted msg before sending: " , ct_str)
-    # client_soc.sendall(cipherText.encode())
+    
     client_soc.sendall(msg.encode())
 
 
     print("now we checking\n\n")
-    create_cipher(client_soc, "hello world!")
+    cipherText = create_cipher(client_soc, "hello world!")
+    client_soc.sendall(cipherText.encode())
+
 
     sock.close()
     client_soc.close()

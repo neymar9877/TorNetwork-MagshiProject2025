@@ -9,6 +9,10 @@ import hashlib
 import time
 PORT = 1535
 IP = '127.0.0.1'
+SPLITTER = "#"
+LAST_VALUE = -1
+
+index = 2
 
 def diffie_hellman(client_soc):
     prime_str, generator_str  = client_soc.recv(1024).decode().split(",")
@@ -33,6 +37,27 @@ def aes_decrypt(key: bytes, iv: bytes, ciphertext: bytes) -> bytes:
     cipher = Cipher(algorithms.AES(key), modes.CFB(iv))
     decryptor = cipher.decryptor()
     return decryptor.update(ciphertext) + decryptor.finalize()
+
+def node1(key: bytes, iv: bytes, ciphertext: bytes):
+    global index
+    index = index - 1
+    cipher = aes_decrypt(key, iv, ciphertext)
+    print("cipher after node1: ", cipher.hex())
+    return cipher
+
+def node2(key: bytes, iv: bytes, ciphertext: bytes):
+    global index
+    index = index - 1
+    cipher = aes_decrypt(key, iv, ciphertext)
+    print("cipher after node2: ", cipher.hex())
+    return cipher
+
+def node3(key: bytes, iv: bytes, ciphertext: bytes):
+    global index
+    index = index - 1
+    cipher = aes_decrypt(key, iv, ciphertext)
+    print("cipher after node3: ", cipher.hex())
+    return cipher
 
 def main():
     # Create a TCP/IP socket
@@ -65,6 +90,23 @@ def main():
     print("decrypted msg after recive: ", plain_text)
 
     key_list = [diffie_hellman(sock) for _ in range(3)]
+    aes_key_list = []
+
+    for dh_key in key_list:
+        # Convert int -> bytes 
+        key_bytes = str(dh_key).encode()
+        aes_key = hashlib.sha256(key_bytes).digest()  # AES-256 key
+        aes_key_list.append(aes_key)
+
+    client2_msg = sock.recv(1024).decode()
+    parts = client2_msg.split(SPLITTER)
+
+    iv_list = [bytes.fromhex(iv_hex) for iv_hex in parts[:LAST_VALUE]]
+    ct_str = parts[LAST_VALUE]
+
+    cipher = node1(aes_key_list[index], iv_list[index], ct_str.encode())
+    cipher = node2(aes_key_list[index], iv_list[index], cipher)
+    cipher = node3(aes_key_list[index], iv_list[index], cipher)
 
     sock.close()
 
