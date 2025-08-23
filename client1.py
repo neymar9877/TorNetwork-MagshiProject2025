@@ -104,10 +104,14 @@ def main():
     iv_list = [bytes.fromhex(iv_hex) for iv_hex in parts[:LAST_VALUE]]
     ct_str = parts[LAST_VALUE]
 
-    cipher = node1(aes_key_list[index], iv_list[index], ct_str.encode())
+    print(index)
+    cipher = node1(aes_key_list[index], iv_list[index], bytes.fromhex(ct_str))
+    print(index)
     cipher = node2(aes_key_list[index], iv_list[index], cipher)
+    print(index)
     cipher = node3(aes_key_list[index], iv_list[index], cipher)
 
+    print ("message is: ", cipher.decode())
     sock.close()
 
 
