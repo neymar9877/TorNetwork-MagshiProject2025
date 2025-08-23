@@ -9,21 +9,22 @@ import hashlib
 PORT = 1535
 IP = '127.0.0.1'
 
-def diffie_hellman(sock):
-    prime = randprime(0, 10000)
-    generator = 2
-    param_str = f"{prime},{generator}".encode()
-    sock.sendall(param_str)
-
+def diffie_hellman(client_soc):
+    prime_str, generator_str  = client_soc.recv(1024).decode().split(",")
+    prime = int(prime_str)
+    generator = int(generator_str)
+    
     private_num = random.randint(2, prime - 1)
     temp_key = pow(generator, private_num, prime)
-    sock.sendall(str(temp_key).encode())
-    
-    other_key = sock.recv(1024).decode()
+
+    other_key = client_soc.recv(1024).decode()
     other_key = int(other_key)
 
+    client_soc.sendall(str(temp_key).encode())
     shared_key = pow(other_key, private_num, prime)
     return shared_key
+
+
     
 
 def aes_decrypt(key: bytes, iv: bytes, ciphertext: bytes) -> bytes:
@@ -61,6 +62,8 @@ def main():
     plain_text = aes_decrypt(aes_key, iv, ct)
     print("encrypted msg after recive: ", ct_str)
     print("decrypted msg after recive: ", plain_text)
+
+    key_list = [diffie_hellman(sock) for _ in range(3)]
 
     sock.close()
 
